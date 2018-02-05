@@ -46,7 +46,7 @@ namespace MemoryLookupBenchmark
 
 		public long Length => _dataLength;
 
-		public ReadOnlyMemorySlice<byte> Slice(long offset, int length) => new ReadOnlyMemorySlice<byte>(_buffer, _dataOffset + offset, length);
+		public SafeBufferSlice<byte> Slice(long offset, int length) => new SafeBufferSlice<byte>(_buffer, _dataOffset + offset, length);
 
 		public ReadOnlyBuffer<byte> CreateReadOnlyBuffer() => SafeBufferOwnedMemory<byte>.CreateReadOnlyBuffer(_buffer, _dataOffset, _dataLength);
 	}

@@ -9,40 +9,19 @@ It compares the performance of copying data from the memory mapped file to a sta
 
 # Results
 
-````
-// * Detailed results *
-MemoryAccessBenchmark.Custom: DefaultJob
-Runtime = .NET Core 2.0.5 (Framework 4.6.26020.03), 64bit RyuJIT; GC = Concurrent Workstation
-Mean = 142.7912 ns, StdErr = 0.1426 ns (0.10%); N = 13, StdDev = 0.5141 ns
-Min = 141.7743 ns, Q1 = 142.5432 ns, Median = 142.7881 ns, Q3 = 142.9924 ns, Max = 144.0505 ns
-IQR = 0.4492 ns, LowerFence = 141.8693 ns, UpperFence = 143.6662 ns
-ConfidenceInterval = [142.1754 ns; 143.4069 ns] (CI 99.9%), Margin = 0.6157 ns (0.43% of Mean)
-Skewness = 0.54, Kurtosis = 4
-
-
-MemoryAccessBenchmark.ReadOnlyBuffer: DefaultJob
-Runtime = .NET Core 2.0.5 (Framework 4.6.26020.03), 64bit RyuJIT; GC = Concurrent Workstation
-Mean = 294.7868 ns, StdErr = 0.8890 ns (0.30%); N = 13, StdDev = 3.2054 ns
-Min = 290.1037 ns, Q1 = 293.1232 ns, Median = 294.3099 ns, Q3 = 295.5389 ns, Max = 303.0835 ns
-IQR = 2.4157 ns, LowerFence = 289.4996 ns, UpperFence = 299.1624 ns
-ConfidenceInterval = [290.9482 ns; 298.6254 ns] (CI 99.9%), Margin = 3.8386 ns (1.30% of Mean)
-Skewness = 1.04, Kurtosis = 4.03
-
-
-Total time: 00:00:43 (43.36 sec)
-
-// * Summary *
-
+``` ini
 BenchmarkDotNet=v0.10.12, OS=Windows 10 Redstone 3 [1709, Fall Creators Update] (10.0.16299.192)
-Intel Core i7-3720QM CPU 2.60GHz (Ivy Bridge), 1 CPU, 8 logical cores and 4 physical cores
-Frequency=2533317 Hz, Resolution=394.7394 ns, Timer=TSC
+Intel Core i7-4578U CPU 3.00GHz (Haswell), 1 CPU, 4 logical cores and 2 physical cores
+Frequency=2929690 Hz, Resolution=341.3330 ns, Timer=TSC
 .NET Core SDK=2.1.4
   [Host]     : .NET Core 2.0.5 (Framework 4.6.26020.03), 64bit RyuJIT
   DefaultJob : .NET Core 2.0.5 (Framework 4.6.26020.03), 64bit RyuJIT
+```
 
-
-         Method |     Mean |     Error |    StdDev |
---------------- |---------:|----------:|----------:|
-         Custom | 142.8 ns | 0.6157 ns | 0.5141 ns |
- ReadOnlyBuffer | 294.8 ns | 3.8386 ns | 3.2054 ns |
-````
+|                                                                                    Method |       Mean |     Error |    StdDev | Scaled | ScaledSD |
+|------------------------------------------------------------------------------------------ |-----------:|----------:|----------:|-------:|---------:|
+|                                                    &#39;Only generate the random item index.&#39; |   1.774 ns | 0.0295 ns | 0.0262 ns |   0.01 |     0.00 |
+|               &#39;Generate the random index, and copy static data to the stack using Spans.&#39; |  39.803 ns | 0.0751 ns | 0.0702 ns |   0.25 |     0.00 |
+|                         &#39;Copy a random item to the stack using a locally generated Span.&#39; | 160.455 ns | 1.7740 ns | 1.6594 ns |   1.00 |     0.00 |
+| &#39;Copy a random item to the stack using the custom implemented SafeBufferSlice&lt;T&gt; struct.&#39; | 168.540 ns | 3.3838 ns | 4.5172 ns |   1.05 |     0.03 |
+|                     &#39;Copy a random item to the stack using the ReadOnlyBuffer&lt;T&gt; struct.&#39; | 329.546 ns | 3.3078 ns | 3.0941 ns |   2.05 |     0.03 |
