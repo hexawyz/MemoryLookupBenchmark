@@ -29,6 +29,10 @@ namespace MemoryLookupBenchmark
         private readonly System.Buffers.IMemoryList.ReadOnlySequence<byte> _multiReadOnlyBufferIMemoryList;
         private readonly System.Buffers.Current.ReadOnlySequence<byte> _multiReadOnlyBufferCurrent;
 
+        private readonly System.Buffers.ReadOnlySequenceSegment.ReadOnlySequence<byte> _largeReadOnlyBufferROSS;
+        private readonly System.Buffers.IMemoryList.ReadOnlySequence<byte> _largeReadOnlyBufferIMemoryList;
+        private readonly System.Buffers.Current.ReadOnlySequence<byte> _largeReadOnlyBufferCurrent;
+
         private readonly System.Buffers.ReadOnlySequenceSegment.ReadOnlySequence<byte> _readOnlyBufferROSS;
         private readonly System.Buffers.IMemoryList.ReadOnlySequence<byte> _readOnlyBufferIMemoryList;
         private readonly System.Buffers.Current.ReadOnlySequence<byte> _readOnlyBufferCurrent;
@@ -54,9 +58,13 @@ namespace MemoryLookupBenchmark
             _singleReadOnlyBufferIMemoryList = IMemoryList.OwnedMemorySegment<byte>.CreateSingleSequence(ownedMemory);
             _singleReadOnlyBufferCurrent = Current.OwnedMemorySegment<byte>.CreateSingleSequence(ownedMemory);
 
-            _multiReadOnlyBufferROSS = ReadOnlySequenceSegment.OwnedMemorySegment<byte>.CreateMultiSequence(ownedMemory);
-            _multiReadOnlyBufferIMemoryList = IMemoryList.OwnedMemorySegment<byte>.CreateMultiSequence(ownedMemory);
-            _multiReadOnlyBufferCurrent = Current.OwnedMemorySegment<byte>.CreateMultiSequence(ownedMemory);
+            _multiReadOnlyBufferROSS = ReadOnlySequenceSegment.OwnedMemorySegment<byte>.CreateMultiSequence(ownedMemory, 100);
+            _multiReadOnlyBufferIMemoryList = IMemoryList.OwnedMemorySegment<byte>.CreateMultiSequence(ownedMemory, 100);
+            _multiReadOnlyBufferCurrent = Current.OwnedMemorySegment<byte>.CreateMultiSequence(ownedMemory, 100);
+
+            _largeReadOnlyBufferROSS = ReadOnlySequenceSegment.OwnedMemorySegment<byte>.CreateMultiSequence(ownedMemory, 1000);
+            _largeReadOnlyBufferIMemoryList = IMemoryList.OwnedMemorySegment<byte>.CreateMultiSequence(ownedMemory, 1000);
+            _largeReadOnlyBufferCurrent = Current.OwnedMemorySegment<byte>.CreateMultiSequence(ownedMemory, 1000);
         }
 
         private static unsafe void GenerateRandomBytes(byte* pointer, long count)
@@ -146,6 +154,33 @@ namespace MemoryLookupBenchmark
             Span<byte> destination = stackalloc byte[ItemLength];
             long index = (long)(_random.Next() & ItemCountMask) * ItemLength;
             _multiReadOnlyBufferROSS.Slice(ItemLength * 99, ItemLength).CopyTo(destination);
+            return index;
+        }
+
+        [BenchmarkCategory("1000 segments"), Benchmark(Baseline = true, Description = "ReadOnlySequence<T> (current)")]
+        public unsafe long LargeSegmentCurrent()
+        {
+            Span<byte> destination = stackalloc byte[ItemLength];
+            long index = (long)(_random.Next() & ItemCountMask) * ItemLength;
+            _largeReadOnlyBufferCurrent.Slice(ItemLength * 99, ItemLength).CopyTo(destination);
+            return index;
+        }
+
+        [BenchmarkCategory("1000 segments"), Benchmark(Description = "ReadOnlySequence<T> (PR dotnet/corefx#27455)")]
+        public unsafe long LargeSegmentIMemoryList()
+        {
+            Span<byte> destination = stackalloc byte[ItemLength];
+            long index = (long)(_random.Next() & ItemCountMask) * ItemLength;
+            _largeReadOnlyBufferIMemoryList.Slice(ItemLength * 99, ItemLength).CopyTo(destination);
+            return index;
+        }
+
+        [BenchmarkCategory("1000 segments"), Benchmark(Description = "ReadOnlySequence<T> (PR dotnet/corefx#27499)")]
+        public unsafe long LargeSegmentROSS()
+        {
+            Span<byte> destination = stackalloc byte[ItemLength];
+            long index = (long)(_random.Next() & ItemCountMask) * ItemLength;
+            _largeReadOnlyBufferROSS.Slice(ItemLength * 99, ItemLength).CopyTo(destination);
             return index;
         }
 
