@@ -9,6 +9,13 @@ namespace MemoryLookupBenchmark.ReadOnlySequenceSegment
     /// <typeparam name="T"></typeparam>
     public class OwnedMemorySegment<T> : ReadOnlySequenceSegment<T>
     {
+        public static ReadOnlySequence<T> CreateSingleSequence(OwnedMemory<T> buffer)
+        {
+            OwnedMemorySegment<T> first = new OwnedMemorySegment<T>(buffer);
+
+            return new ReadOnlySequence<T>(first, 0, first, first.Memory.Length);
+        }
+
         private OwnedMemory<T> _ownedMemory;
 
         public OwnedMemorySegment(OwnedMemory<T> memory)

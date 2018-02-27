@@ -4,6 +4,7 @@ using System.Buffers.ReadOnlySequenceSegment;
 using System.Buffers.Current;
 using System.Buffers.IMemoryList;
 using System.Runtime.InteropServices;
+using System.Buffers;
 
 namespace MemoryLookupBenchmark
 {
@@ -14,7 +15,12 @@ namespace MemoryLookupBenchmark
         public const long ItemCount = 0x3000_0000;
         public const long ItemCountMask = ItemCount - 1;
 
-        private readonly MemoryMappedFileMemory _memory;
+        private readonly MemoryMappedFileMemory _mmMemory;
+
+        private readonly System.Buffers.ReadOnlySequenceSegment.ReadOnlySequence<byte> _singleReadOnlyBufferROSS;
+        private readonly System.Buffers.IMemoryList.ReadOnlySequence<byte> _singleRreadOnlyBufferIMemoryList;
+        private readonly System.Buffers.Current.ReadOnlySequence<byte> _singleReadOnlyBufferCurrent;
+
         private readonly System.Buffers.ReadOnlySequenceSegment.ReadOnlySequence<byte> _readOnlyBufferROSS;
         private readonly System.Buffers.IMemoryList.ReadOnlySequence<byte> _readOnlyBufferIMemoryList;
         private readonly System.Buffers.Current.ReadOnlySequence<byte> _readOnlyBufferCurrent;
@@ -24,17 +30,20 @@ namespace MemoryLookupBenchmark
         public unsafe MemoryAccessBenchmark()
         {
             // Create a memory mapped file and fill it with random bytes
-            _memory = new MemoryMappedFileMemory(ItemLength * ItemCount);
-            GenerateRandomBytes(_memory.DataPointer, _memory.Length);
-            _readOnlyBufferROSS = _memory.CreateReadOnlyBufferROSS();
-            _readOnlyBufferIMemoryList = _memory.CreateReadOnlyBufferIMemoryList();
-            _readOnlyBufferCurrent = _memory.CreateReadOnlyBufferCurrent();
+            _mmMemory = new MemoryMappedFileMemory(ItemLength * ItemCount);
+            GenerateRandomBytes(_mmMemory.DataPointer, _mmMemory.Length);
+            _readOnlyBufferROSS = _mmMemory.CreateReadOnlyBufferROSS();
+            _readOnlyBufferIMemoryList = _mmMemory.CreateReadOnlyBufferIMemoryList();
+            _readOnlyBufferCurrent = _mmMemory.CreateReadOnlyBufferCurrent();
 
             // Create the same RNG for both benchmarks
             _random = XorShiftRandom.Create(0x6780867534);
 
             // Allocate 5 bytes for the 
             _constantMemoryPointer = Marshal.AllocHGlobal(5);
+            _singleReadOnlyBufferROSS = ReadOnlySequenceSegment.OwnedMemorySegment<byte>.CreateSingleSequence(new PointerOwnedMemory<byte>((byte*)_constantMemoryPointer, 0, 5));
+            _singleRreadOnlyBufferIMemoryList = IMemoryList.OwnedMemorySegment<byte>.CreateSingleSequence(new PointerOwnedMemory<byte>((byte*)_constantMemoryPointer, 0, 5));
+            _singleReadOnlyBufferCurrent = Current.OwnedMemorySegment<byte>.CreateSingleSequence(new PointerOwnedMemory<byte>((byte*)_constantMemoryPointer, 0, 5));
         }
 
         private static unsafe void GenerateRandomBytes(byte* pointer, long count)
@@ -72,18 +81,46 @@ namespace MemoryLookupBenchmark
             return index;
         }
 
+
+        [Benchmark(Description = "Random index, 1 segment. ReadOnlySequence<T> (current)")]
+        public unsafe long SingleSegmentCurrent()
+        {
+            Span<byte> destination = stackalloc byte[ItemLength];
+            long index = (long)(_random.Next() & ItemCountMask) * ItemLength;
+            _singleReadOnlyBufferCurrent.Slice(0, ItemLength).CopyTo(destination);
+            return index;
+        }
+
+        [Benchmark(Description = "Random index, 1 segment. ReadOnlySequence<T> (PR dotnet/corefx#27455)")]
+        public unsafe long SingleSegmentIMemoryList()
+        {
+            Span<byte> destination = stackalloc byte[ItemLength];
+            long index = (long)(_random.Next() & ItemCountMask) * ItemLength;
+            _singleRreadOnlyBufferIMemoryList.Slice(0, ItemLength).CopyTo(destination);
+            return index;
+        }
+
+        [Benchmark(Description = "Random index, 1 segment. ReadOnlySequence<T> (PR dotnet/corefx#27499)")]
+        public unsafe long SingleSegmentROSS()
+        {
+            Span<byte> destination = stackalloc byte[ItemLength];
+            long index = (long)(_random.Next() & ItemCountMask) * ItemLength;
+            _singleReadOnlyBufferROSS.Slice(0, ItemLength).CopyTo(destination);
+            return index;
+        }
+
         [Benchmark(Baseline = true, Description = "MM item. Local Span")]
         public unsafe void Direct()
         {
             Span<byte> destination = stackalloc byte[ItemLength];
-            new ReadOnlySpan<byte>(_memory.DataPointer + (long)(_random.Next() & ItemCountMask) * ItemLength, ItemLength).CopyTo(destination);
+            new ReadOnlySpan<byte>(_mmMemory.DataPointer + (long)(_random.Next() & ItemCountMask) * ItemLength, ItemLength).CopyTo(destination);
         }
 
         [Benchmark(Description = "MM item. BufferSlice<T>")]
         public void Custom()
         {
             Span<byte> destination = stackalloc byte[ItemLength];
-            _memory.Slice((long)(_random.Next() & ItemCountMask) * ItemLength, ItemLength).Span.CopyTo(destination);
+            _mmMemory.Slice((long)(_random.Next() & ItemCountMask) * ItemLength, ItemLength).Span.CopyTo(destination);
         }
 
         [Benchmark(Description = "MM item. ReadOnlySequence<T> (current)")]
