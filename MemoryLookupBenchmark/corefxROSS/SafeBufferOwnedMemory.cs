@@ -16,6 +16,18 @@ namespace MemoryLookupBenchmark.ReadOnlySequenceSegment
             return new ReadOnlySequence<T>(first, 0, first, first.Memory.Length);
         }
 
+        public static ReadOnlySequence<T> CreateMultiSequence(OwnedMemory<T> buffer)
+        {
+            OwnedMemorySegment<T> first = new OwnedMemorySegment<T>(buffer);
+            OwnedMemorySegment<T> last = first;
+            for (var i = 1; i < 100; i++)
+            {
+                last = last.Append(buffer);
+            }
+
+            return new ReadOnlySequence<T>(first, 0, last, last.Memory.Length);
+        }
+
         private OwnedMemory<T> _ownedMemory;
 
         public OwnedMemorySegment(OwnedMemory<T> memory)
