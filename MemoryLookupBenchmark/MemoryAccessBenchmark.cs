@@ -192,10 +192,17 @@ namespace MemoryLookupBenchmark
         }
 
         [BenchmarkCategory("MM item"), Benchmark(Description = "BufferSlice<T>")]
-        public void Custom()
+        public void BufferSlice()
         {
             Span<byte> destination = stackalloc byte[ItemLength];
             _mmMemory.Slice((long)(_random.Next() & ItemCountMask) * ItemLength, ItemLength).Span.CopyTo(destination);
+        }
+
+        [BenchmarkCategory("MM item"), Benchmark(Description = "BufferSlice<T> no Bounds Checking")]
+        public void BufferSliceNoBoundsChecking()
+        {
+            Span<byte> destination = stackalloc byte[ItemLength];
+            _mmMemory.SliceWithoutBoundsChecking((long)(_random.Next() & ItemCountMask) * ItemLength, ItemLength).Span.CopyTo(destination);
         }
 
         [BenchmarkCategory("MM item"), Benchmark(Baseline = true, Description = "ReadOnlySequence<T> (current)")]

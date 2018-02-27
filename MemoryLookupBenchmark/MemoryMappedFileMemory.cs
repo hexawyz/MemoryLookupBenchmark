@@ -46,7 +46,17 @@ namespace MemoryLookupBenchmark
 
 		public long Length => _dataLength;
 
-		public BufferSlice<byte> Slice(long offset, int length) => new BufferSlice<byte>(_buffer, _dataOffset + offset, length);
+		public BufferSlice<byte> Slice(long offset, int length)
+		{
+			if (unchecked((ulong)offset) > (ulong)_dataLength || (ulong)length > (ulong)(_dataLength - offset))
+			{
+				ThrowHelper.ThrowArgumentOutOfRangeException();
+			}
+
+			return new BufferSlice<byte>(_buffer, _dataOffset + offset, length);
+		}
+
+		public BufferSlice<byte> SliceWithoutBoundsChecking(long offset, int length) => new BufferSlice<byte>(_buffer, _dataOffset + offset, length);
 
 		public System.Buffers.ReadOnlySequenceSegment.ReadOnlySequence<byte> CreateReadOnlyBufferROSS() => ReadOnlySequenceSegment.SafeBufferOwnedMemory<byte>.CreateReadOnlyBuffer(_buffer, _dataOffset, _dataLength);
 
