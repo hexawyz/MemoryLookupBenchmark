@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace System.Buffers
+namespace System.Buffers.ReadOnlySequenceSegment
 {
     /// <summary>
     /// Represents a sequence that can read a sequential series of <typeparam name="T" />.
@@ -37,7 +37,11 @@ namespace System.Buffers
         /// <summary>
         /// Determines if the <see cref="ReadOnlySequence{T}"/> contains a single <see cref="ReadOnlyMemory{T}"/> segment.
         /// </summary>
-        public bool IsSingleSegment => _sequenceStart.GetObject() == _sequenceEnd.GetObject();
+        public bool IsSingleSegment
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _sequenceStart.GetObject() == _sequenceEnd.GetObject();
+        } 
 
         /// <summary>
         /// Gets <see cref="ReadOnlyMemory{T}"/> from the first segment.

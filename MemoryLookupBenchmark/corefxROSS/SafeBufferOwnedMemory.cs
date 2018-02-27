@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Buffers;
+using System.Buffers.ReadOnlySequenceSegment;
 using System.Runtime.InteropServices;
 
-namespace MemoryLookupBenchmark
+namespace MemoryLookupBenchmark.ReadOnlySequenceSegment
 {
     /// <summary>Wrapper around <see cref="SafeBuffer"/> usable together with <see cref="ReadOnlySequenceSegment{T}"/>.</summary>
     /// <typeparam name="T"></typeparam>

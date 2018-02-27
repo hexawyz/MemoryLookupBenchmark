@@ -17,9 +17,5 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.10.12" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="corefx\" />
-  </ItemGroup>
 
 </Project>

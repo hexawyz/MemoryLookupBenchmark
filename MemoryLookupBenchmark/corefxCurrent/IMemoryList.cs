@@ -2,26 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Buffers
+namespace System.Buffers.Current
 {
     /// <summary>
     /// Represents a linked list of <see cref="Memory{T}"/> nodes.
     /// </summary>
-    public abstract class ReadOnlySequenceSegment<T>
+    public interface IMemoryList<T>
     {
         /// <summary>
-        /// The <see cref="ReadOnlyMemory{T}"/> value for current node.
+        /// The <see cref="Memory{T}"/> value for current node.
         /// </summary>
-        public ReadOnlyMemory<T> Memory { get; protected set; }
+        Memory<T> Memory { get; }
 
         /// <summary>
         /// The next node.
         /// </summary>
-        public ReadOnlySequenceSegment<T> Next { get; protected set; }
+        IMemoryList<T> Next { get; }
 
         /// <summary>
         /// The sum of node length before current.
         /// </summary>
-        public long RunningIndex { get; protected set; }
+        long RunningIndex { get; }
     }
 }

@@ -5,7 +5,7 @@
 //using System.Numerics.Hashing;
 using System.ComponentModel;
 
-namespace System
+namespace System.Buffers
 {
     /// <summary>
     /// Represents position in non-contiguous set of memory.

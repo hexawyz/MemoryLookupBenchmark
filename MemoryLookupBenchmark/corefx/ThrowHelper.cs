@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Buffers;
 using System.Runtime.Serialization;
 
-namespace System
+namespace System.Buffers
 {
     //
     // This pattern of easily inlinable "void Throw" routines that stack on top of NoInlining factory methods
@@ -130,10 +130,24 @@ namespace System
         //
         // ReadOnlySequence .ctor validation Throws coalesced to enable inlining of the .ctor
         //
-        public static void ThrowArgumentValidationException<T>(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment)
+        public static void ThrowArgumentValidationException<T>(System.Buffers.IMemoryList.IMemoryList<T> startSegment, int startIndex, System.Buffers.IMemoryList.IMemoryList<T> endSegment)
             => throw CreateArgumentValidationException(startSegment, startIndex, endSegment);
 
-        private static Exception CreateArgumentValidationException<T>(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment)
+        private static Exception CreateArgumentValidationException<T>(System.Buffers.IMemoryList.IMemoryList<T> startSegment, int startIndex, System.Buffers.IMemoryList.IMemoryList<T> endSegment)
+        {
+            if (startSegment == null)
+                return CreateArgumentNullException(ExceptionArgument.startSegment);
+            else if (endSegment == null)
+                return CreateArgumentNullException(ExceptionArgument.endSegment);
+            else if ((uint)startSegment.Memory.Length < (uint)startIndex)
+                return CreateArgumentOutOfRangeException(ExceptionArgument.startIndex);
+            else
+                return CreateArgumentOutOfRangeException(ExceptionArgument.endIndex);
+        }
+        public static void ThrowArgumentValidationException<T>(System.Buffers.ReadOnlySequenceSegment.ReadOnlySequenceSegment<T> startSegment, int startIndex, System.Buffers.ReadOnlySequenceSegment.ReadOnlySequenceSegment<T> endSegment)
+            => throw CreateArgumentValidationException(startSegment, startIndex, endSegment);
+
+        private static Exception CreateArgumentValidationException<T>(System.Buffers.ReadOnlySequenceSegment.ReadOnlySequenceSegment<T> startSegment, int startIndex, System.Buffers.ReadOnlySequenceSegment.ReadOnlySequenceSegment<T> endSegment)
         {
             if (startSegment == null)
                 return CreateArgumentNullException(ExceptionArgument.startSegment);
