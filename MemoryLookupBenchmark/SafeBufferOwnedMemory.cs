@@ -4,70 +4,88 @@ using System.Runtime.InteropServices;
 
 namespace MemoryLookupBenchmark
 {
-	/// <summary>Wrapper around <see cref="SafeBuffer"/> usable together with <see cref="ReadOnlyBuffer{T}"/>.</summary>
-	/// <typeparam name="T"></typeparam>
-	internal sealed class SafeBufferOwnedMemory<T> : OwnedMemory<T>, IMemoryList<T>
-	{
-		public static ReadOnlyBuffer<T> CreateReadOnlyBuffer(SafeBuffer buffer, long offset, long length)
-		{
-			int count = (int)(length & 0x3FFF_FFFF);
-			length -= count;
-			offset += length;
-			var last = new SafeBufferOwnedMemory<T>(buffer, offset, count, null);
-			var first = last;
+    /// <summary>Wrapper around <see cref="SafeBuffer"/> usable together with <see cref="ReadOnlySequenceSegment{T}"/>.</summary>
+    /// <typeparam name="T"></typeparam>
+    public class OwnedMemorySegment<T> : ReadOnlySequenceSegment<T>
+    {
+        private OwnedMemory<T> _ownedMemory;
 
-			while (length > 0)
-			{
-				length -= 0x4000_0000;
-				offset -= 0x4000_0000;
-				first = new SafeBufferOwnedMemory<T>(buffer, offset, 0x4000_0000, first);
-			}
+        public OwnedMemorySegment(OwnedMemory<T> memory)
+        {
+            _ownedMemory = memory;
+            Memory = memory.Memory;
+        }
 
-			return new ReadOnlyBuffer<T>(first, 0, last, count);
-		}
+        public OwnedMemorySegment<T> Append(OwnedMemory<T> memory)
+        {
+            var segment = new OwnedMemorySegment<T>(memory)
+            {
+                RunningIndex = RunningIndex + Memory.Length
+            };
+            Next = segment;
+            return segment;
+        }
+    }
 
-		private readonly SafeBuffer _buffer;
-		private readonly long _offset;
-		private readonly int _length;
-		private readonly SafeBufferOwnedMemory<T> _next;
+    public sealed class SafeBufferOwnedMemory<T> : OwnedMemory<T>
+    {
+        public static ReadOnlySequence<T> CreateReadOnlyBuffer(SafeBuffer buffer, long offset, long length)
+        {
+            int count = (int)Math.Min(length, int.MaxValue);
+            OwnedMemorySegment<T> first = new OwnedMemorySegment<T>(new SafeBufferOwnedMemory<T>(buffer, offset, count));
+            OwnedMemorySegment<T> last = first;
+            length -= count;
+            offset += count;
 
-		private SafeBufferOwnedMemory(SafeBuffer buffer, long offset, int length, SafeBufferOwnedMemory<T> next)
-		{
-			_buffer = buffer;
-			_offset = offset;
-			_length = length;
-			_next = next;
-		}
+            while (length > 0)
+            {
+                count = (int)Math.Min(length, int.MaxValue);
+                last = last.Append(new SafeBufferOwnedMemory<T>(buffer, offset, count));
+                length -= count;
+                offset += count;
+            }
 
-		public long RunningIndex => _offset;
-		public override int Length => _length;
-		public IMemoryList<T> Next => _next;
+            return new ReadOnlySequence<T>(first, 0, last, last.Memory.Length);
+        }
 
-		protected override void Dispose(bool disposing) { }
+        private readonly SafeBuffer _buffer;
+        private readonly long _offset;
+        private readonly int _length;
 
-		public override bool IsDisposed => _buffer.IsClosed;
-		protected override bool IsRetained => !_buffer.IsClosed;
+        private SafeBufferOwnedMemory(SafeBuffer buffer, long offset, int length)
+        {
+            _buffer = buffer;
+            _offset = offset;
+            _length = length;
+        }
 
-		public override unsafe Span<T> Span => new Span<T>((byte*)_buffer.DangerousGetHandle() + _offset, _length);
-		
-		public override void Retain()
-		{
-			bool success = false;
-			_buffer.DangerousAddRef(ref success);
-		}
+        public override int Length => _length;
 
-		public override bool Release()
-		{
-			_buffer.DangerousRelease();
-			return _buffer.IsClosed;
-		}
+        protected override void Dispose(bool disposing) { }
 
-		public override unsafe MemoryHandle Pin(int byteOffset = 0) => new MemoryHandle(this, (byte*)_buffer.DangerousGetHandle() + _offset);
+        public override bool IsDisposed => _buffer.IsClosed;
+        protected override bool IsRetained => !_buffer.IsClosed;
 
-		protected override bool TryGetArray(out ArraySegment<T> arraySegment)
-		{
-			arraySegment = null;
-			return false;
-		}
-	}
+        public override unsafe Span<T> Span => new Span<T>((byte*)_buffer.DangerousGetHandle() + _offset, _length);
+
+        public override void Retain()
+        {
+            bool success = false;
+            _buffer.DangerousAddRef(ref success);
+        }
+
+        public override bool Release()
+        {
+            _buffer.DangerousRelease();
+            return _buffer.IsClosed;
+        }
+
+        public override unsafe MemoryHandle Pin(int byteOffset = 0) => new MemoryHandle(this, (byte*)_buffer.DangerousGetHandle() + _offset);
+
+        protected override bool TryGetArray(out ArraySegment<T> arraySegment)
+        {
+            arraySegment = null;
+            return false;
+        }
+    }
 }

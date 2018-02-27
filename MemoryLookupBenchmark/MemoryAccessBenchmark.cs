@@ -12,7 +12,7 @@ namespace MemoryLookupBenchmark
         public const long ItemCountMask = ItemCount - 1;
 
         private readonly MemoryMappedFileMemory _memory;
-        private readonly ReadOnlyBuffer<byte> _readOnlyBuffer;
+        private readonly ReadOnlySequence<byte> _readOnlyBuffer;
         private XorShiftRandom _random;
         private readonly IntPtr _constantMemoryPointer;
 
@@ -79,7 +79,7 @@ namespace MemoryLookupBenchmark
             _memory.Slice((long)(_random.Next() & ItemCountMask) * ItemLength, ItemLength).Span.CopyTo(destination);
         }
 
-        [Benchmark(Description = "Copy a random item to the stack using the ReadOnlyBuffer<T> struct.")]
+        [Benchmark(Description = "Copy a random item to the stack using the ReadOnlySequence<T> struct.")]
         public void ReadOnlyBuffer()
         {
             Span<byte> destination = stackalloc byte[ItemLength];
