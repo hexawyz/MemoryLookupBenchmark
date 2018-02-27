@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace MemoryLookupBenchmark
 {
+    [Config(typeof(DefaultCoreConfig))]
     public class MemoryAccessBenchmark
     {
         public const int ItemLength = 5;
